@@ -1,0 +1,109 @@
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity traffic_light_controller is
+	port (standby : in std_logic; test : in std_logic; in_clk : in std_logic; 
+	r1, r2, g1, g2, y1, y2 : out std_logic);
+end traffic_light_controller;
+
+architecture finite_state_machine of traffic_light_controller is
+	constant timeMax : integer := 2700;
+	constant timeRG : integer := 1800;
+	constant timeRY : integer := 300;
+	constant timeGR : integer := 2700;
+	constant timeYR : integer := 300;
+	constant timeTest : integer := 60;
+	type state is (RG, RY, GR, YR, YY);
+	signal pr_state, nx_state : state;
+	signal timec : integer range 0 to timeMax;
+
+	begin							  	
+    	-- Design of the lower (sequential) section
+		lower_section : process(in_clk)
+			variable count : integer range 0 to timeMax;
+			begin
+				if standby = '1' then
+					pr_state <= YY;
+					count := 0;
+				elsif in_clk'Event and in_clk = '1' then
+					count := count+1;
+					if count = timec then
+						pr_state <= nx_state;
+						count := 0;
+					end if;
+				end if;
+			end process;
+		
+		-- Design of upper (combinational) section
+		upper_section : process(pr_state, test)
+			begin
+				case pr_state is
+					when RY =>
+						r1 <= '1';
+						r2 <= '0';
+						y1 <= '0';
+						y2 <= '1';
+						g1 <= '0';
+						g2 <= '0';
+						nx_state <= GR;
+						if test = '1' then
+							timec <= timeTest;
+						else
+							timec <= timeRY;
+						end if;
+					when GR => 
+						r1 <= '0';
+						r2 <= '1';
+						y1 <= '0';
+						y2 <= '0';
+						g1 <= '1';
+						g2 <= '0';
+						nx_state <= YR;
+						if test = '1' then
+							timec <= timeTest;
+						else
+							timec <= timeGR;
+						end if;
+					when YR => 
+						r1 <= '0';
+						r2 <= '1';
+						y1 <= '1';
+						y2 <= '0';
+						g1 <= '0';
+						g2 <= '0';
+						nx_state <= RG;
+						if test = '1' then
+							timec <= timeTest;
+						else
+							timec <= timeYR;
+						end if;
+					when RG => 
+						r1 <= '1';
+						r2 <= '0';
+						y1 <= '0';
+						y2 <= '0';
+						g1 <= '0';
+						g2 <= '1';
+						nx_state <= RY;
+						if test = '1' then
+							timec <= timeTest;
+						else
+							timec <= timeRG;
+						end if;
+					when YY => 
+						r1 <= '0';
+						r2 <= '0';
+						y1 <= '1';
+						y2 <= '1';
+						g1 <= '0';
+						g2 <= '0';
+						nx_state <= RY;
+				end case;
+			end process;
+	end finite_state_machine;
+						
+						
+					
+						
+					
+				
